@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baton: pass your project's state to the next AI</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d1b16;--mute:#6b665a;--line:#e3dfd3;--acc:#c2410c;--acc2:#7c2d12;--ok:#15803d;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#16140f;--card:#201d16;--ink:#f1ede2;--mute:#a39d8c;--line:#352f22;--acc:#fb923c;--acc2:#fdba74;--ok:#4ade80;--warn:#fbbf24}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:22px 20px 6px;max-width:1100px;margin:auto}h1{margin:0;font-size:26px;letter-spacing:-.5px}h1 span{color:var(--acc)}
+.sub{color:var(--mute);margin:4px 0 0}main{max-width:1100px;margin:auto;padding:14px 20px 60px;display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+.full{grid-column:1/-1}textarea,input,select{width:100%;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:230px;resize:vertical;font:13px/1.45 ui-monospace,Menlo,monospace}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}.row>*{flex:1 1 150px}
+button{cursor:pointer;border:0;border-radius:10px;padding:11px 16px;font:600 14px system-ui;background:var(--acc);color:#fff}button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}.status{font-size:13px;color:var(--mute);margin-top:8px;min-height:20px}.status.err{color:#dc2626}.status.ok{color:var(--ok)}
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;border:1px solid var(--line);color:var(--mute)}.pill.on{color:var(--ok);border-color:var(--ok)}.pill.off{color:var(--warn);border-color:var(--warn)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.stat{border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer}.stat b{font-size:20px;display:block}.stat small{color:var(--mute)}
+.stat.zero b{color:var(--mute)}.stat.sel{border-color:var(--acc)}
+ul.items{margin:8px 0 0;padding-left:18px}ul.items li{margin:3px 0}.goal{font-size:15px;margin:0 0 10px}.lbl{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:420px;overflow:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace;margin:10px 0 0}
+.empty{color:var(--mute);padding:14px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Baton<span>.</span> <span class="pill" id="modepill">checking…</span></h1>
+  <p class="sub">When one AI runs out, the project shouldn't. Extract the <em>state</em> of your project with a local open-weight model, then hand it to any other AI.</p>
+</header>
+<main>
+  <section class="card">
+    <h2>1 · Conversation</h2>
+    <textarea id="conv" placeholder="Paste a Claude / ChatGPT / Gemini conversation here (plain text, markdown with Human:/Assistant:, or exported JSON). Nothing leaves your machine in local mode."></textarea>
+    <div class="row">
+      <input id="pname" placeholder="Project name (optional)">
+      <input id="repo" placeholder="Local git repo path (optional, local mode)" title="Adds real commits and uncommitted changes to the extraction">
+    </div>
+    <div class="row">
+      <select id="model"><option value="">default model</option></select>
+      <select id="mode" title="Multi-agent runs four specialists + a reconciler: slower, usually better on small models"><option value="single">Single pass</option><option value="agents">Multi-agent (specialists + reconciler)</option></select>
+      <button class="ghost" id="demo">Load demo</button>
+      <input type="file" id="file" accept=".txt,.md,.json" style="display:none"><button class="ghost" id="upload">Upload file</button>
+    </div>
+    <div class="row"><button id="analyze">Analyze conversation</button></div>
+    <div class="status" id="status"></div>
+    <div class="status" id="trace"></div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Project memory</h2>
+    <div id="memory"><div class="empty">Nothing yet. Analyze a conversation or load the demo.</div></div>
+  </section>
+
+  <section class="card full">
+    <h2>3 · Handoff</h2>
+    <div class="row" style="margin-top:0">
+      <select id="target"></select>
+      <button id="gen" disabled>Generate handoff</button>
+      <button class="ghost" id="copy" disabled>Copy</button>
+      <button class="ghost" id="dl" disabled>Download .md</button>
+    </div>
+    <div class="status" id="hstatus"></div>
+    <pre id="out" hidden></pre>
+  </section>
+</main>
+<script src="handoff.js"></script>
+<script>
+(function () {
+  var H = window.BatonHandoff, $ = function (id) { return document.getElementById(id); };
+  var LABELS = { do_not_change: "Do not change", constraints: "Constraints", decisions: "Decisions", architecture: "Architecture",
+    failed_attempts: "Failed attempts", user_preferences: "Preferences", files: "Files", recent_changes: "Recent changes",
+    known_bugs: "Known bugs", open_tasks: "Open tasks" };
+  var state = null, live = false, selected = "do_not_change", lastHandoff = "";
+
+  Object.keys(H.TARGETS).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = H.TARGETS[k].label; $("target").appendChild(o); });
+  function setStatus(id, msg, cls) { var e = $(id); e.textContent = msg || ""; e.className = "status " + (cls || ""); }
+
+  function itemText(f, it) {
+    if (f === "decisions") return it.what + (it.why ? " (why: " + it.why + ")" : "");
+    if (f === "failed_attempts") return it.what + (it.why_failed ? " (failed: " + it.why_failed + ")" : "");
+    if (f === "files") return it.path + (it.note ? ": " + it.note : "");
+    return it;
+  }
+  function renderMemory() {
+    var m = $("memory"); m.textContent = "";
+    if (!state) { m.innerHTML = '<div class="empty">Nothing yet. Analyze a conversation or load the demo.</div>'; return; }
+    var add = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; e.textContent = text; m.appendChild(e); return e; };
+    add("div", "lbl", "Goal"); add("p", "goal", state.goal || "(not captured)");
+    var grid = document.createElement("div"); grid.className = "grid"; m.appendChild(grid);
+    var c = H.counts(state);
+    Object.keys(LABELS).forEach(function (f) {
+      var d = document.createElement("div"); d.className = "stat" + (c[f] ? "" : " zero") + (f === selected ? " sel" : "");
+      d.innerHTML = "<b></b><small></small>"; d.firstChild.textContent = c[f]; d.lastChild.textContent = LABELS[f];
+      d.onclick = function () { selected = f; renderMemory(); }; grid.appendChild(d);
+    });
+    add("div", "lbl", LABELS[selected]).style.marginTop = "12px";
+    var ul = document.createElement("ul"); ul.className = "items"; m.appendChild(ul);
+    var list = state[selected] || [];
+    if (!list.length) { var li = document.createElement("li"); li.textContent = "None recorded."; ul.appendChild(li); }
+    list.forEach(function (it) { var li = document.createElement("li"); li.textContent = itemText(selected, it); ul.appendChild(li); });
+    var lbl = add("div", "lbl", "Current state"); lbl.style.marginTop = "12px"; add("div", "", state.current_state || "(not captured)");
+    lbl = add("div", "lbl", "Next action"); lbl.style.marginTop = "10px"; add("div", "", state.next_action || "(not captured)");
+  }
+  function setState(s) {
+    state = H.normalize(s); selected = state.do_not_change.length ? "do_not_change" : "decisions";
+    renderMemory(); $("gen").disabled = false; generate();
+  }
+  function showTrace(trace, warnings) {
+    var t = $("trace"); t.textContent = "";
+    (trace || []).forEach(function (a) { var d = document.createElement("div"); d.textContent = "• " + a.agent + ": " + a.items + " items" + (a.seconds != null ? " (" + a.seconds + "s)" : ""); t.appendChild(d); });
+    (warnings || []).forEach(function (w) { var d = document.createElement("div"); d.style.color = "var(--warn)"; d.textContent = "⚠ " + w; t.appendChild(d); });
+  }
+  function generate() {
+    if (!state) return;
+    lastHandoff = H.render(state, $("target").value, { projectName: $("pname").value });
+    var o = $("out"); o.hidden = false; o.textContent = lastHandoff;
+    $("copy").disabled = false; $("dl").disabled = false;
+    var conv = $("conv").value.length, t = H.estimateTokens(lastHandoff);
+    setStatus("hstatus", "≈" + t + " tokens" + (conv ? " (the pasted transcript is ≈" + H.estimateTokens($("conv").value) + ")" : "") + " · ready to paste into " + H.TARGETS[$("target").value].label, "ok");
+  }
+  function api(path, opts) { return fetch(path, opts).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.statusText); return j; }); }); }
+
+  api("api/health").then(function (h) {
+    live = true; var p = $("modepill"), on = h.ollama;
+    p.textContent = on ? "model ready (" + h.provider + ")" : "model server not running"; p.className = "pill " + (on ? "on" : "off");
+    (h.models || []).forEach(function (n) { var o = document.createElement("option"); o.value = n; o.textContent = n; $("model").appendChild(o); });
+    if (!on) setStatus("status", "Start a local model server (Ollama, llama.cpp, LM Studio; see README) to analyze your own conversations. The demo still works.", "err");
+  }).catch(function () {
+    $("modepill").textContent = "demo mode (static)"; $("modepill").className = "pill off"; $("mode").disabled = true; $("analyze").disabled = true;
+    setStatus("status", "This hosted page is demo-only. Run Baton locally to analyze your own conversations with a local model.");
+  });
+
+  $("demo").onclick = function () {
+    setStatus("status", "Loading demo…");
+    Promise.all([fetch("demo/conversation-before.md").then(function (r) { return r.text(); }),
+                 fetch("demo/project-state.json").then(function (r) { return r.json(); })]).then(function (a) {
+      $("conv").value = a[0]; $("pname").value = "Pocket Ledger"; setState(a[1]);
+      setStatus("status", "Demo loaded: a pre-extracted reference state. Run locally to extract live with your own model.", "ok");
+    }).catch(function () { setStatus("status", "Could not load demo files.", "err"); });
+  };
+  $("upload").onclick = function () { $("file").click(); };
+  $("file").onchange = function (e) { var f = e.target.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { $("conv").value = r.result; setStatus("status", "Loaded " + f.name); }; r.readAsText(f); };
+  $("analyze").onclick = function () {
+    var conv = $("conv").value.trim();
+    if (!conv) return setStatus("status", "Paste or upload a conversation first.", "err");
+    $("analyze").disabled = true; setStatus("status", "Reading the conversation with the local model… this can take a minute on CPU.");
+    api("api/analyze", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation: conv, model: $("model").value, mode: $("mode").value, repo_path: $("repo").value }) })
+      .then(function (r) { setState(r.state); showTrace(r.trace, r.warnings);
+        setStatus("status", "Extracted from " + r.messages + " messages" + (r.git_used ? " + git history" : "") + " (" + r.mode + ").", "ok"); })
+      .catch(function (e) { setStatus("status", e.message, "err"); })
+      .then(function () { $("analyze").disabled = !live; });
+  };
+  $("gen").onclick = generate; $("target").onchange = generate;
+  $("copy").onclick = function () {
+    (navigator.clipboard ? navigator.clipboard.writeText(lastHandoff) : Promise.reject()).then(function () { setStatus("hstatus", "Copied. Paste it as the first message in the next AI.", "ok"); })
+      .catch(function () { var r = document.createRange(); r.selectNodeContents($("out")); getSelection().removeAllRanges(); getSelection().addRange(r); setStatus("hstatus", "Press Ctrl/Cmd+C to copy the selection."); });
+  };
+  $("dl").onclick = function () {
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lastHandoff], { type: "text/markdown" }));
+    a.download = ($("target").value === "agent" ? "AGENTS" : "handoff-" + $("target").value) + ".md"; a.click();
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# One container = llama.cpp server + Baton, for hosts that run a single container (Render, Fly, a VPS, HF Spaces Docker).
+# The model downloads on first boot (several GB), so mount a persistent disk at /root/.cache/llama.cpp.
+FROM ghcr.io/ggml-org/llama.cpp:server
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends python3 git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app/baton
+COPY . .
+RUN chmod +x docker/entrypoint.sh
+ENV LLAMA_MODEL=ggml-org/gemma-4-E4B-it-GGUF:Q4_K_M LLAMA_CTX=8192 \
+    HOST=0.0.0.0 PORT=8765 BATON_DISABLE_REPO=1 \
+    BATON_PROVIDER=openai BATON_BASE_URL=http://127.0.0.1:8080/v1
+EXPOSE 8765
+ENTRYPOINT ["/app/baton/docker/entrypoint.sh"]

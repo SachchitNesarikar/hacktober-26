@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Baton: hand your project to the next AI",
+  "version": "0.1.0",
+  "description": "Capture an AI chat, extract project state with your local open-weight model, and hand it to another AI.",
+  "permissions": ["storage"],
+  "host_permissions": ["http://127.0.0.1:8765/*", "http://localhost:8765/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://claude.ai/*", "https://chatgpt.com/*", "https://chat.openai.com/*", "https://gemini.google.com/*"],
+    "js": ["handoff.js", "content.js"],
+    "run_at": "document_idle"
+  }],
+  "options_ui": { "page": "options.html", "open_in_tab": false }
+}

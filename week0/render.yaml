@@ -1,0 +1,6 @@
+# Optional: hosts the UI + demo only (no local model on a free host).
+services:
+  - type: web
+    name: baton-demo
+    runtime: docker
+    plan: free

@@ -1,0 +1,26 @@
+# llama.cpp + Baton. The model is downloaded from Hugging Face on first start and cached in a volume.
+#   docker compose up -d --build        then open http://localhost:8765
+# Change the model:  LLAMA_MODEL=ggml-org/gemma-4-E4B-it-GGUF:Q8_0 docker compose up -d
+services:
+  llama:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    command: >
+      -hf ${LLAMA_MODEL:-ggml-org/gemma-4-E4B-it-GGUF:Q4_K_M}
+      --host 0.0.0.0 --port 8080 -c ${LLAMA_CTX:-8192} --jinja
+    volumes:
+      - llama-cache:/root/.cache/llama.cpp
+    ports: ["8080:8080"]
+    restart: unless-stopped
+  baton:
+    build: .
+    depends_on: [llama]
+    environment:
+      BATON_PROVIDER: openai
+      BATON_BASE_URL: http://llama:8080/v1
+      BATON_MODEL: local-model
+      BATON_DISABLE_REPO: "1"
+      HOST: 0.0.0.0
+    ports: ["8765:8765"]
+    restart: unless-stopped
+volumes:
+  llama-cache:
