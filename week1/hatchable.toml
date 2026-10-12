@@ -1,0 +1,9 @@
+name = "TouchGrass"
+tagline = "One good thing, offline."
+description = "A tiny open-AI daily mission app that turns personal goals into one real-world action."
+
+[[secret]]
+name = "HF_TOKEN"
+required = false
+expose = true
+description = "Optional Hugging Face token to enable Gemma open-weight mission generation. Without it, TouchGrass uses its built-in mission library."

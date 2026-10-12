@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f4f3e9">
+  <title>TouchGrass — one good thing, offline</title>
+  <meta name="description" content="One small mission to get you out of your feed and into your life.">
+  <style>
+    :root{--paper:#f4f3e9;--ink:#17251d;--muted:#69776c;--green:#24583f;--lime:#d9f27b;--line:#dce0d3;--white:#fffef8;--orange:#ec8655}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,textarea{font:inherit}button{cursor:pointer}
+    .wrap{max-width:1120px;margin:0 auto;padding:28px 28px 56px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:58px}
+    .brand{display:flex;gap:10px;align-items:center;font-weight:850;letter-spacing:-.04em;font-size:21px}.mark{width:34px;height:34px;background:var(--green);color:var(--lime);display:grid;place-items:center;border-radius:11px;font-size:19px}
+    .tag{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:750}
+    .top-note{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:#77a64a}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:end;margin-bottom:38px}
+    h1{font-size:clamp(42px,6vw,72px);line-height:.96;letter-spacing:-.075em;margin:18px 0 20px;max-width:650px;font-weight:850}
+    h1 em{font-family:Georgia,serif;font-weight:500;color:var(--green);letter-spacing:-.07em}
+    .lede{font-size:17px;line-height:1.65;color:var(--muted);max-width:500px;margin:0}
+    .hero-aside{display:flex;justify-content:flex-end;align-items:end;gap:12px;padding-bottom:5px}
+    .big-stat{background:var(--lime);padding:20px 24px;border-radius:20px;min-width:145px;transform:rotate(-3deg)}
+    .big-stat strong{font-size:42px;letter-spacing:-.07em;display:block;line-height:1}.big-stat span{font-size:12px;font-weight:750;display:block;margin-top:8px}
+    .scribble{font-family:Georgia,serif;font-size:20px;line-height:1.2;max-width:145px;transform:rotate(4deg);color:var(--green)}
+    .grid{display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:stretch}
+    .panel{background:var(--white);border:1px solid var(--line);border-radius:24px;padding:24px}
+    .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.panel h2{font-size:19px;letter-spacing:-.04em;margin:0}
+    .step{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-weight:700}
+    .field-label{font-size:12px;font-weight:800;display:block;margin:22px 0 10px;color:#526257}
+    .focus-list{display:grid;gap:8px}
+    .focus{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px 14px;text-align:left;background:transparent;display:flex;gap:11px;align-items:center;color:var(--ink);transition:.15s}
+    .focus:hover{border-color:#829783}.focus.active{background:#e8eedf;border-color:#65826a;box-shadow:inset 0 0 0 1px #65826a}
+    .focus-icon{width:34px;height:34px;background:#f0f0e5;border-radius:10px;display:grid;place-items:center;font-size:17px}
+    .focus.active .focus-icon{background:var(--green);color:var(--lime)}
+    .focus b{font-size:13px;display:block}.focus small{font-size:11px;color:var(--muted);display:block;margin-top:3px}
+    .time-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+    .time{border:1px solid var(--line);background:transparent;border-radius:11px;padding:10px 0;font-size:12px;font-weight:750;color:var(--muted)}
+    .time.active{background:var(--ink);color:white;border-color:var(--ink)}
+    .goal{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fbfbf4;color:var(--ink);outline:none}.goal:focus,textarea:focus{border-color:#789179;box-shadow:0 0 0 3px #24583f14}
+    .primary{width:100%;border:0;border-radius:13px;background:var(--green);color:white;font-weight:800;padding:15px 18px;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .15s,background .15s}
+    .primary:hover{background:#1b4631;transform:translateY(-1px)}.primary:disabled{opacity:.6;cursor:wait;transform:none}
+    .mission-panel{background:var(--green);color:#f9faef;border-radius:24px;padding:27px;position:relative;overflow:hidden;min-height:500px;display:flex;flex-direction:column}
+    .mission-panel:after{content:"";position:absolute;width:330px;height:330px;border:1px solid #ffffff19;border-radius:50%;right:-145px;top:100px;box-shadow:0 0 0 32px #ffffff08,0 0 0 66px #ffffff05;pointer-events:none}
+    .mission-top{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1}
+    .eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#c4d8bb;font-weight:800}
+    .status{border:1px solid #ffffff42;color:#d3e5c7;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:750}
+    .mission-content{position:relative;z-index:1;max-width:610px;margin:auto 0;padding:40px 0 32px}
+    .mission-icon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:28px;background:var(--lime);color:var(--ink);margin-bottom:23px}
+    .mission-content h2{font-size:clamp(32px,4.3vw,51px);line-height:1.02;letter-spacing:-.065em;margin:0 0 15px;max-width:580px}
+    .mission-content p{color:#cdd9ca;font-size:15px;line-height:1.75;max-width:510px;margin:0}
+    .mission-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+    .meta-pill{border:1px solid #ffffff35;border-radius:999px;padding:8px 11px;font-size:11px;color:#ecf0e2;font-weight:700}
+    .mission-footer{border-top:1px solid #ffffff30;padding-top:19px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1}
+    .nudge{font-size:12px;color:#d2dfca}.done-btn{border:0;border-radius:12px;background:var(--lime);color:var(--ink);padding:13px 17px;font-size:12px;font-weight:850;white-space:nowrap}.done-btn:hover{filter:brightness(1.04)}.done-btn:disabled{background:#ffffff22;color:#d7e5d0}
+    .reflection{display:none;margin-top:16px;position:relative;z-index:2}.reflection.show{display:block}.reflection label{font-size:12px;color:#dbe7d6;font-weight:750;display:block;margin-bottom:8px}.reflection textarea{width:100%;min-height:76px;resize:vertical;border-radius:12px;padding:12px;background:#163e2c;color:white;border:1px solid #ffffff3d;outline:none}.reflection-row{display:flex;gap:9px;margin-top:8px}.reflection-row button{border:1px solid #ffffff44;border-radius:10px;background:transparent;color:white;padding:10px 13px;font-size:12px;font-weight:750}.reflection-row button:first-child{background:#ffffff;color:var(--green);border-color:white}
+    .bottom{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+    .bottom .panel{padding:21px 24px}.row-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.row-title h2{margin:0;font-size:17px}.count{font-size:12px;color:var(--muted)}
+    .history-list{display:flex;gap:8px;flex-wrap:wrap}.history-chip{font-size:11px;background:#edf0e6;border-radius:999px;padding:9px 11px;color:#48604e;font-weight:750}.empty{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
+    .foot{display:flex;justify-content:space-between;gap:15px;margin-top:26px;color:var(--muted);font-size:11px}.foot b{color:var(--green)}
+    .toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);background:var(--ink);color:white;border-radius:12px;padding:12px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:10}.toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:800px){.wrap{padding:20px 16px 38px}header{margin-bottom:38px}.hero{grid-template-columns:1fr;gap:22px}.hero-aside{justify-content:flex-start}.grid{grid-template-columns:1fr}.mission-panel{min-height:470px}.bottom{grid-template-columns:1fr}.top-note{font-size:11px}}
+    @media(max-width:440px){.top-note .note-text{display:none}.mission-footer{align-items:flex-start;flex-direction:column}.done-btn{width:100%}.panel{padding:20px}.mission-panel{padding:21px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><span class="mark">↗</span> touchgrass<span style="color:var(--orange)">.</span></div>
+      <div class="top-note"><span class="dot"></span><span class="note-text">Less scrolling. More living.</span></div>
+    </header>
+    <section class="hero">
+      <div>
+        <div class="tag">Your daily nudge · No feed, no fuss</div>
+        <h1>Make room for<br><em>real life.</em></h1>
+        <p class="lede">One small mission, picked for the person you're becoming. Get it, go do it, and get back to your day.</p>
+      </div>
+      <div class="hero-aside">
+        <div class="scribble">The best app session is the one that gets you outside.</div>
+        <div class="big-stat"><strong id="streakNum">0</strong><span>DAY STREAK</span></div>
+      </div>
+    </section>
+    <main class="grid">
+      <section class="panel">
+        <div class="panel-head"><h2>Set your direction</h2><span class="step">01 / 02</span></div>
+        <span class="field-label" style="margin-top:0">WHAT DO YOU WANT MORE OF?</span>
+        <div class="focus-list" role="group" aria-label="Choose a focus">
+          <button class="focus active" data-focus="move"><span class="focus-icon">↟</span><span><b>Move your body</b><small>Walks, mobility, outdoor fitness</small></span></button>
+          <button class="focus" data-focus="learn"><span class="focus-icon">⌘</span><span><b>Sharpen your mind</b><small>Problems, reading, deep thinking</small></span></button>
+          <button class="focus" data-focus="grow"><span class="focus-icon">❋</span><span><b>Explore & grow</b><small>Nature, creativity, new places</small></span></button>
+        </div>
+        <label class="field-label" for="goal">YOUR PERSONAL GOAL <span style="font-weight:500;color:#8a9689">(optional)</span></label>
+        <input class="goal" id="goal" maxlength="100" placeholder="e.g. build consistency with running">
+        <span class="field-label">HOW MUCH TIME HAVE YOU GOT?</span>
+        <div class="time-row" role="group" aria-label="Mission duration">
+          <button class="time" data-minutes="5">5 min</button>
+          <button class="time active" data-minutes="15">15 min</button>
+          <button class="time" data-minutes="30">30 min</button>
+        </div>
+        <button id="generateBtn" class="primary"><span>✳</span> Find my mission <span>↗</span></button>
+        <p style="font-size:11px;color:var(--muted);line-height:1.55;margin:12px 0 0">Missions are designed to be screen-light. Check the task, then leave your phone behind when practical.</p>
+      </section>
+      <section class="mission-panel" aria-live="polite">
+        <div class="mission-top"><span class="eyebrow">Today's mission</span><span id="sourcePill" class="status">Ready when you are</span></div>
+        <div class="mission-content">
+          <div id="missionIcon" class="mission-icon">↟</div>
+          <h2 id="missionTitle">Take the scenic route.</h2>
+          <p id="missionDesc">Head outside for a short walk. Choose a street or path you don't usually take, notice three things you would normally miss, and let your mind wander.</p>
+          <div class="mission-meta"><span class="meta-pill" id="durationPill">◷ 15 minutes</span><span class="meta-pill" id="focusPill">↟ Movement</span><span class="meta-pill">◎ No equipment</span></div>
+        </div>
+        <div class="mission-footer">
+          <span class="nudge" id="footerNudge">Tiny actions compound. Start where you are.</span>
+          <button id="doneBtn" class="done-btn">I did it ✓</button>
+        </div>
+        <div id="reflection" class="reflection">
+          <label for="reflectionText">Nice. What did you notice? <span style="font-weight:400">(optional)</span></label>
+          <textarea id="reflectionText" maxlength="240" placeholder="One thing worth remembering..."></textarea>
+          <div class="reflection-row"><button id="saveReflection">Save & close</button><button id="skipReflection">Skip</button></div>
+        </div>
+      </section>
+    </main>
+    <section class="bottom">
+      <div class="panel"><div class="row-title"><h2>Your recent wins</h2><span class="count" id="winCount">0 completed</span></div><div id="historyList" class="history-list"><p class="empty">Your first win is waiting. Complete a mission and it will show up here.</p></div></div>
+      <div class="panel"><div class="row-title"><h2>The idea</h2><span class="count">Open by design</span></div><p class="empty">Your progress stays in this browser. Missions can be served by an open-weight language model when configured, with a lightweight fallback so the app remains useful even offline from AI services. No feed. No profile to build. Just one thing to do.</p></div>
+    </section>
+    <footer class="foot"><span>Made for the world beyond your screen.</span><span><b>touchgrass</b> · an open-AI experiment</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const missions = {
+      move:[
+        {icon:"↟",title:"Take the scenic route.",desc:"Head outside for a short walk. Choose a street or path you don't usually take, notice three things you would normally miss, and let your mind wander."},
+        {icon:"◒",title:"A tiny mobility reset.",desc:"Find a safe, comfortable spot. Spend a few minutes on gentle ankle circles, hip openers, shoulder rolls and easy stretches. Keep every movement pain-free."},
+        {icon:"↗",title:"Walk and think.",desc:"Pick one thing you've been turning over in your head. Walk at an easy pace and think it through without opening a podcast or checking messages."},
+        {icon:"❋",title:"Find a little green.",desc:"Walk to the nearest tree, garden or patch of plants. Slow down and notice textures, shapes and sounds. Leave the space as you found it."}
+      ],
+      learn:[
+        {icon:"⌘",title:"Solve one thing on paper.",desc:"Choose a small problem or concept you've been learning. Work on paper for one focused session. At the end, explain the key insight in three sentences from memory."},
+        {icon:"▤",title:"Read beyond the headline.",desc:"Take a book or printed article somewhere comfortable away from your desk. Read a few pages, then write down one idea that changed or sharpened your thinking."},
+        {icon:"◎",title:"Teach an invisible student.",desc:"Pick something you learned recently. Explain it out loud as if teaching a curious beginner. Notice where you get vague, and make that the next thing you study."},
+        {icon:"✳",title:"Take a curiosity walk.",desc:"Head outside with one question in mind. Look for details that connect to it, then come back and jot down what you noticed or what you still want to know."}
+      ],
+      grow:[
+        {icon:"❋",title:"Notice five small things.",desc:"Step outside and find five details you usually overlook: a plant, a pattern, a sound, a building detail or a change in the light. No photos needed."},
+        {icon:"↟",title:"Explore one street over.",desc:"Choose a safe route you rarely take. Walk slowly, find one place or detail you hadn't noticed, and return with a tiny new piece of local knowledge."},
+        {icon:"◌",title:"Make something by hand.",desc:"Use what's around you to sketch, write a few lines, arrange a small space or start a tiny creative experiment. Aim for curiosity, not a finished product."},
+        {icon:"⌁",title:"Give nature your attention.",desc:"Spend a few quiet minutes outdoors. Listen for distinct sounds, observe the weather and look at how plants or shadows change. Let attention itself be the activity."}
+      ]
+    };
+    const labels={move:"Movement",learn:"Mind",grow:"Exploration"};
+    let focus="move", minutes=15, current=null, generation=0;
+    const todayKey=()=>new Date().toLocaleDateString("en-CA");
+    const readStore=()=>{try{return JSON.parse(localStorage.getItem("tg-data")||'{"wins":[],"lastDone":"","streak":0}')}catch{return {wins:[],lastDone:"",streak:0}}};
+    const store=(d)=>localStorage.setItem("tg-data",JSON.stringify(d));
+    function updateStats(){const d=readStore();$("streakNum").textContent=d.streak||0;$("winCount").textContent=(d.wins||[]).length+" completed";const list=$("historyList");list.innerHTML="";if(!d.wins||!d.wins.length){list.innerHTML='<p class="empty">Your first win is waiting. Complete a mission and it will show up here.</p>';return}d.wins.slice(-5).reverse().forEach(w=>{const el=document.createElement("span");el.className="history-chip";el.textContent=w.icon+" "+w.title;el.title=(w.date||"")+(w.note?" — "+w.note:"");list.appendChild(el)})}
+    function showMission(m,source){current=m;$("missionIcon").textContent=m.icon||"✳";$("missionTitle").textContent=m.title;$("missionDesc").textContent=m.desc;$("durationPill").textContent="◷ "+minutes+" minutes";$("focusPill").textContent="↟ "+labels[focus];$("sourcePill").textContent=source==="open-model"?"Open model · Gemma":"Ready when you are";$("footerNudge").textContent=source==="open-model"?"Personalized by an open-weight model.":"Tiny actions compound. Start where you are.";$("doneBtn").disabled=false;$("doneBtn").textContent="I did it ✓";$("reflection").classList.remove("show");$("reflectionText").value=""}
+    function fallbackMission(){const arr=missions[focus];let candidate=arr[Math.floor(Math.random()*arr.length)];return {...candidate}}
+    async function generate(){
+      const btn=$("generateBtn");btn.disabled=true;btn.innerHTML="<span>✳</span> Finding your mission…";const token=++generation;
+      const params={focus,minutes,goal:$("goal").value.trim()};
+      try{
+        const res=await fetch((window.__HATCHABLE__?.api||"/api")+"/mission",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(params)});
+        if(res.ok){const payload=await res.json();if(token===generation&&payload.mission){showMission(payload.mission,payload.source||"fallback");btn.disabled=false;btn.innerHTML="<span>✳</span> Find my mission <span>↗</span>";return}}
+      }catch(e){/* The built-in library keeps the app useful without network access. */}
+      if(token===generation)showMission(fallbackMission(),"fallback");
+      btn.disabled=false;btn.innerHTML="<span>✳</span> Find my mission <span>↗</span>";
+    }
+    function markDone(){const d=readStore(),today=todayKey();if(d.lastDone!==today){const y=new Date();y.setDate(y.getDate()-1);const yesterday=y.toLocaleDateString("en-CA");d.streak=d.lastDone===yesterday?(d.streak||0)+1:1;d.lastDone=today}d.wins=d.wins||[];d.wins.push({title:current.title,icon:current.icon||"✳",date:today,focus,note:""});d.wins=d.wins.slice(-20);store(d);updateStats();$("doneBtn").disabled=true;$("doneBtn").textContent="Mission complete ✓";$("reflection").classList.add("show");toast("That counts. Nice work.");}
+    function saveNote(){const d=readStore();if(d.wins?.length){d.wins[d.wins.length-1].note=$("reflectionText").value.trim();store(d);updateStats()}$("reflection").classList.remove("show");}
+    function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+    document.querySelectorAll(".focus").forEach(b=>b.addEventListener("click",()=>{focus=b.dataset.focus;document.querySelectorAll(".focus").forEach(x=>x.classList.toggle("active",x===b));showMission(fallbackMission(),"fallback")}));
+    document.querySelectorAll(".time").forEach(b=>b.addEventListener("click",()=>{minutes=Number(b.dataset.minutes);document.querySelectorAll(".time").forEach(x=>x.classList.toggle("active",x===b))}));
+    $("generateBtn").addEventListener("click",generate);$("doneBtn").addEventListener("click",markDone);$("saveReflection").addEventListener("click",saveNote);$("skipReflection").addEventListener("click",()=>$("reflection").classList.remove("show"));
+    // Start with a useful mission immediately; no account or setup is required.
+    showMission(missions.move[0],"fallback");updateStats();
+  </script>
+</body>
+</html>
